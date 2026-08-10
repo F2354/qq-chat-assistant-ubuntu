@@ -1,0 +1,10 @@
+# Secrets and local runtime data
+.env
+.env.*
+!.env.example
+napcat-data/
+logs/
+*.log
+config/*.json
+**/tokens/**
+**/secrets/**
