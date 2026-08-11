@@ -1,4 +1,6 @@
-﻿# 在 Ubuntu 服务器上部署个人 QQ 聊天助手
+# 在 Ubuntu 服务器上部署个人 QQ 聊天助手
+
+> 最后整理：2026-08-11  ·  文档类型：GitHub README  ·  用途：个人学习与实验
 
 > 使用 Ubuntu + 1Panel + AstrBot + NapCat，将一个闲置 QQ 号接入大语言模型。
 >
@@ -37,11 +39,11 @@ AstrBot（机器人、模型和插件）
 DeepSeek 或其他兼容提供商
 ```
 
-本仓库只保存教程、脱敏截图和示例配置，不保存 QQ 登录数据、NapCat Token、AstrBot 密码或模型 API Key。
+本仓库只保存教程、截图素材和示例配置，不保存 QQ 登录数据、NapCat Token、AstrBot 密码或模型 API Key。截图仅供示意；如果替换为自己的原图，请在提交前自行脱敏。
 
 ## 安全提醒
 
-1. **不要把真实 IP、实例 ID、登录 Token、QQ 二维码、AstrBot 初始密码或 API Key 提交到 Git。** 本仓库中的截图已经做了脱敏处理。
+1. **不要把真实 IP、实例 ID、登录 Token、QQ 二维码、AstrBot 初始密码或 API Key 提交到 Git。** 如果你替换了仓库中的截图，请在提交前再次确认其中没有真实 IP、Token、二维码、密码或 API Key。
 2. NapCat WebUI、1Panel 和 AstrBot 管理后台都属于管理入口。首次配置可以临时开放端口，但完成后建议使用安全组、1Panel 防火墙、VPN 或 SSH 隧道限制访问来源。
 3. `127.0.0.1` 只表示当前容器或当前主机。NapCat 和 AstrBot 位于不同容器时，不能直接把 `127.0.0.1` 当作对方地址。
 4. 建议使用专门的闲置 QQ 号，不要使用包含重要联系人、支付信息或敏感资料的主账号。
@@ -216,7 +218,8 @@ http://<服务器公网IP>:6099
 在 AstrBot 容器日志中查找初始登录信息。首次登录后会要求修改密码，请使用高强度密码，不要继续使用日志中的初始密码。
 
 ![AstrBot 登录信息（敏感信息已脱敏）](images/17-astrbot-login-redacted.png)
-![修改 AstrBot 密码](images/18-change-password.png)\n![AstrBot 首页快速引导](images/19-astrbot-welcome.png)
+![修改 AstrBot 密码](images/18-change-password.png)
+![AstrBot 首页快速引导](images/19-astrbot-welcome.png)
 
 ### 6.2 选择模型提供商
 
