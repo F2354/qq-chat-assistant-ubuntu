@@ -1,6 +1,6 @@
 # 在 Ubuntu 服务器上部署个人 QQ 聊天助手
 
-> 最后整理：2026-08-11  ·  文档类型：GitHub README  ·  用途：个人学习与实验
+> 最后整理：2026-09-07  ·  文档类型：GitHub README  ·  用途：个人学习与实验
 
 > 使用 Ubuntu + 1Panel + AstrBot + NapCat，将一个闲置 QQ 号接入大语言模型。
 >
@@ -9,7 +9,6 @@
 ## 目录
 
 - [效果与架构](#效果与架构)
-- [安全提醒](#安全提醒)
 - [准备工作](#准备工作)
 - [1. 购买并初始化 Ubuntu 服务器](#1-购买并初始化-ubuntu-服务器)
 - [2. 安装 AstrBot](#2-安装-astrbot)
@@ -21,6 +20,7 @@
 - [故障排查](#故障排查)
 - [仓库结构](#仓库结构)
 - [参考资料](#参考资料)
+- [许可证](#许可证)
 
 ## 效果与架构
 
@@ -39,42 +39,42 @@ AstrBot（机器人、模型和插件）
 DeepSeek 或其他兼容提供商
 ```
 
-本仓库只保存教程、截图素材和示例配置，不保存 QQ 登录数据、NapCat Token、AstrBot 密码或模型 API Key。截图仅供示意；如果替换为自己的原图，请在提交前自行脱敏。
-
-## 安全提醒
-
-1. **不要把真实 IP、实例 ID、登录 Token、QQ 二维码、AstrBot 初始密码或 API Key 提交到 Git。** 如果你替换了仓库中的截图，请在提交前再次确认其中没有真实 IP、Token、二维码、密码或 API Key。
-2. NapCat WebUI、1Panel 和 AstrBot 管理后台都属于管理入口。首次配置可以临时开放端口，但完成后建议使用安全组、1Panel 防火墙、VPN 或 SSH 隧道限制访问来源。
-3. `127.0.0.1` 只表示当前容器或当前主机。NapCat 和 AstrBot 位于不同容器时，不能直接把 `127.0.0.1` 当作对方地址。
-4. 建议使用专门的闲置 QQ 号，不要使用包含重要联系人、支付信息或敏感资料的主账号。
-5. API Key 建议单独创建、限制额度，并在泄露后立即撤销和重新生成。
-
 ## 准备工作
 
-- 一台可以安装 Ubuntu 22.04/24.04 的云服务器，建议至少 2 vCPU、2 GiB 内存。
-- 一个闲置 QQ 号，用于扫码登录 NapCat。
-- 一个模型服务商账号和 API Key，例如 DeepSeek。
-- 可以通过 SSH 或云厂商网页终端登录服务器。
-- 基本的 Linux、Docker、端口和 WebSocket 常识。
+需要准备的：
 
-> 云服务器规格和价格会随活动变化。购买时请以云厂商当前页面为准；如果云厂商提供带宽赠送的 Ubuntu 镜像，可以优先选择，但不要把某个镜像名称当成必须条件。
+- 一台可以安装 Ubuntu 22.04/24.04 的云服务器，建议至少 2 vCPU、2 GiB 内存。
+- **AstrBot、NapCat**（都通过 Docker 运行，不需要手动安装）。
+- 一个**闲置 QQ 号**，用于扫码登录 NapCat。
+- 一个模型服务商账号和 API Key，例如 DeepSeek。
+
+> 两个亲测有效的建议：每个打开的网页在配置好之前都尽量保留，不要急着关掉；每个阶段要复制的内容（Token、初始密码、外部地址等）都粘贴到一个地方统一保存，后面会反复用到。
+
+> 云服务器规格和价格会随活动变化。购买时请以云厂商当前页面为准。
 
 ## 1. 购买并初始化 Ubuntu 服务器
 
-### 1.1 选择系统和镜像
+### 1.1 购买服务器（学生优惠）
 
-在云厂商控制台创建轻量应用服务器或普通云服务器：
+阿里云可以学生认证后领取 300 RMB 卡券，购买一个半年的 2 核 2G 的服务器：
 
-1. 选择 Ubuntu 22.04 LTS 或 Ubuntu 24.04 LTS。
-2. 选择适合自己的地域和配置。
-3. 记录服务器公网 IP，但不要将真实 IP 写进公开仓库。
-4. 创建后打开服务器详情，确认实例状态正常。
+[学生权益 - 阿里云云工开物](https://university.aliyun.com/buycenter/)
+
+建议购买 openclaw 镜像的（有免费宽带）。
+
+![服务器购买/学生权益页面](images/01-server-purchase.png)
+
+<p align="center"><em>图 1　服务器购买/学生权益页面</em></p>
+
+镜像选择 Ubuntu：
 
 ![选择 Ubuntu 镜像](images/02-choose-ubuntu-image.png)
 
+<p align="center"><em>图 2　选择 Ubuntu 镜像</em></p>
+
 ### 1.2 安装 1Panel
 
-通过云厂商网页终端或 SSH 登录服务器，执行 1Panel 官方提供的快速安装命令：
+购买后访问[轻量应用服务器控制台](https://swasnext.console.aliyun.com/servers/cn-guangzhou)，点击**远程连接**，在服务器终端执行 1Panel 官方提供的快速安装命令：
 
 ```bash
 bash -c "$(curl -sSL https://resource.fit2cloud.com/1panel/package/v2/quick_start.sh)"
@@ -84,18 +84,27 @@ bash -c "$(curl -sSL https://resource.fit2cloud.com/1panel/package/v2/quick_star
 
 ![在终端安装 1Panel](images/03-install-1panel.png)
 
-> 1Panel 的访问端口可能由安装过程生成，不一定是固定值。不要照抄截图里的端口；以你自己的终端输出和面板设置为准。
+<p align="center"><em>图 3　在终端安装 1Panel</em></p>
 
 ### 1.3 放行 1Panel 访问端口
 
+点击**更多操作 → 查看详情**进入服务器详情页，在阿里云服务器防火墙放行 1Panel 端口。我这次安装输出的是 `19146`：
+
+![服务器详情](images/04-server-details-redacted.png)
+
+<p align="center"><em>图 4　服务器详情</em></p>
+
+![云防火墙配置](images/05-firewall-rule.png)
+
+<p align="center"><em>图 5　云防火墙放行 1Panel 端口</em></p>
+
 如果无法打开 1Panel：
 
-- 在云厂商安全组/防火墙中放行安装输出的 1Panel 端口。
+- 在云厂商安全组/防火墙中放行安装输出的 1Panel 端口。端口由安装过程生成，不一定是 `19146`，不要照抄截图里的端口，以你自己的终端输出和面板设置为准。
 - 如果启用了 1Panel 自带防火墙，也要添加对应规则。
 - 只允许自己的公网 IP 访问管理端口，不建议对 `0.0.0.0/0` 长期开放。
 
-![服务器详情（已脱敏）](images/04-server-details-redacted.png)
-![云防火墙配置](images/05-firewall-rule.png)
+放行后在服务器的终端复制外部地址，用浏览器访问 1Panel。
 
 ## 2. 安装 AstrBot
 
@@ -105,18 +114,23 @@ bash -c "$(curl -sSL https://resource.fit2cloud.com/1panel/package/v2/quick_star
 2. 搜索 `AstrBot`。
 3. 点击安装。
 4. 按需设置持久化目录和管理端口。
-5. 如果安装页面有“放行端口”选项，请只勾选确实需要的端口。
+5. 记得往下滑勾选放行端口，只勾选确实需要的。
 
 AstrBot WebUI 默认常见端口为 `6185`，但不同版本或安装方式可能有所不同，请以安装页面和容器日志为准。
 
 ![在 1Panel 应用商店安装 AstrBot](images/06-1panel-install-astrbot.png)
+
+<p align="center"><em>图 6　在 1Panel 应用商店安装 AstrBot</em></p>
+
 ![AstrBot 安装进度](images/07-astrbot-install-progress.png)
+
+<p align="center"><em>图 7　AstrBot 安装进度</em></p>
 
 ## 3. 部署 NapCat
 
 ### 3.1 使用 1Panel 编排创建容器
 
-在 1Panel 中进入 **容器 → 编排 → 创建**，粘贴下面的示例配置。仓库中也提供了同样的文件：[`docker-compose.napcat.yml`](docker-compose.napcat.yml)。
+在 1Panel 中进入 **容器 → 编排 → 创建**，粘贴下面的配置。仓库中也提供了同样的文件：[`docker-compose.napcat.yml`](docker-compose.napcat.yml)。
 
 ```yaml
 services:
@@ -131,20 +145,23 @@ services:
       - NAPCAT_UID=0
       - NAPCAT_GID=0
     volumes:
-      - ./napcat-data/config:/app/napcat/config
-      - ./napcat-data/QQ:/app/.config/QQ
-    restart: unless-stopped
+      - ./config:/app/napcat/config
+      - ./QQ:/app/.config/QQ
+    restart: always
 ```
 
 说明：
 
 - `6099`：NapCat WebUI，首次配置会用到。
 - `3000`、`3001`：NapCat 的 HTTP/WebSocket 相关端口，是否需要公网暴露取决于你的连接方式。
-- `./napcat-data`：登录数据和配置目录，不要提交到 Git。
-- `latest` 便于快速体验，但不利于复现；长期运行时建议固定到经过验证的版本标签，并定期备份配置。
 
 ![创建 NapCat 编排](images/08-create-napcat-compose.png)
+
+<p align="center"><em>图 8　创建 NapCat 编排</em></p>
+
 ![NapCat 编排配置](images/09-napcat-compose-editor.png)
+
+<p align="center"><em>图 9　NapCat 编排配置</em></p>
 
 创建并启动容器后，进入 **容器 → NapCat → 日志**，确认容器已经正常启动。
 
@@ -152,56 +169,78 @@ services:
 
 ### 4.1 需要关注的端口
 
+必须到阿里云的安全组放行端口 `6185`（AstrBot WebUI）和 `6099`、`3000`、`3001`（NapCat）；如果开启了 1Panel 的防火墙，同理也要放行。
+
 | 端口 | 用途 | 建议 |
 | --- | --- | --- |
-| 1Panel 安装输出的端口 | 1Panel 管理后台 | 仅允许自己的 IP 访问 |
-| `6185` | AstrBot WebUI（以实际安装结果为准） | 仅允许自己的 IP 访问 |
+| `19146` | 1Panel 管理后台 | 仅允许自己的 IP 访问 |
+| `6185` | AstrBot WebUI | 仅允许自己的 IP 访问 |
 | `6099` | NapCat WebUI | 配置完成后限制来源或改用 SSH 隧道 |
 | `3000`、`3001` | NapCat 连接相关端口 | 按实际拓扑开放，不要盲目全网开放 |
 | `6199` | AstrBot 的 OneBot v11 WebSocket 服务示例端口 | 尽量只在容器网络/内网可达 |
 
-云安全组和 1Panel 防火墙需要分别检查。只配置其中一处，另一处仍可能拦截连接。
+云安全组和 1Panel 防火墙(如开启)需要分别检查。只配置其中一处，另一处仍可能拦截连接。
 
 ![云安全组配置](images/10-firewall-port-rule.png)
+
+<p align="center"><em>图 10　云安全组端口配置</em></p>
+
 ![1Panel 防火墙配置](images/11-1panel-firewall-rule.png)
 
-### 4.2 配置 OneBot v11 WebSocket
+<p align="center"><em>图 11　1Panel 防火墙配置</em></p>
 
-推荐使用 **NapCat WebSocket 客户端 → AstrBot WebSocket 服务端** 的方向，避免同时维护两套重复连接：
+### 4.2 在NapCat配置 WebSocket Sever
 
-1. 在 AstrBot 的平台配置中启用 OneBot v11，并创建 WebSocket 服务端。
-2. 示例端口填写 `6199`，路径填写 `/ws`；如果设置了 Token，客户端必须使用相同 Token。
-3. 在 NapCat 的 **网络配置 → WebSocket 客户端** 中，新建客户端。
-4. 将 URL 填为：
+1. 在NapCat创建 WebSocket 服务端（参考图13填写）。
+2. 如果设置了 Token，客户端必须使用相同 Token(一般不需要填写)。
 
-```text
+
+![NapCat 网络配置](images/13-napcat-network-config-redacted.png)
+
+<p align="center"><em>图 12　NapCat 网络配置</em></p>
+
+![WebSocket 服务端配置](images/14-websocket-server-config.png)
+
+<p align="center"><em>图 13　WebSocket 服务端配置</em></p>
+
+### 4.3 在NapCat配置 WebSocket Client
+
+1. 在NapCat创建 WebSocket 服务端（参考图15填写）。
+
+填 URL 之前必须先拿到一个 NapCat 容器能够访问的地址。NapCat 运行在 Docker 容器内部，容器里的 `127.0.0.1` 指向的是容器自身而不是宿主机，所以千万不要填 `127.0.0.1`。
+
+2. 在 1Panel 终端执行：
+
+```bash
+ip route | awk '/default/ {print $3}'
+```
+
+通常会返回类似 `172.17.0.1` 或 `10.0.0.1` 这样的地址，填入 <AstrBot可达地址>
+```
 ws://<AstrBot可达地址>:6199/ws
 ```
 
-`<AstrBot可达地址>` 必须是 NapCat 容器能够访问的地址：
+![WebSocket 客户端配置](images/16-websocket-client-config-redacted.png)
 
-- 同一个 Docker 网络：优先使用 AstrBot 的服务名或容器名。
-- 不同编排/不同网络：使用宿主机或网关地址，并确认宿主机端口映射正确。
-- 不要在跨容器场景中填写 `127.0.0.1`，因为它通常指向 NapCat 自己。
+<p align="center"><em>图 14　WebSocket 客户端配置</em></p>
 
-![NapCat 网络配置（已脱敏）](images/13-napcat-network-config-redacted.png)
-![WebSocket 服务端配置](images/14-websocket-server-config.png)
-![容器地址（已脱敏）](images/15-container-ip-redacted.png)
-![WebSocket 客户端配置（已脱敏）](images/16-websocket-client-config-redacted.png)
+
 
 ## 5. 登录 QQ
 
 ### 5.1 获取 NapCat WebUI Token
 
-在 NapCat 容器日志中找到 WebUI Token。然后在浏览器访问：
+在 NapCat 的启动日志中查找 WebUI Token 并复制。然后在浏览器访问 NapCat WebUI（我的是 `http://IP:6099`，把 IP 换成你自己服务器的公网 IP）：
 
 ```text
-http://<服务器公网IP>:6099
+http://8.xxx.xx.xxx:6099
 ```
 
-输入 Token 后进入 WebUI，选择闲置 QQ 号并扫码登录。Token、二维码和公网 IP 都属于敏感信息，不要截图公开。
+输入 Token 后进入 WebUI，选择闲置 QQ 号并扫码登录。
 
-![NapCat Token 和二维码（已脱敏）](images/12-napcat-token-redacted.png)
+![NapCat Token 和二维码](images/12-napcat-token-redacted.png)
+
+<p align="center"><em>图 15　NapCat Token 和二维码</em></p>
 
 ### 5.2 确认连接状态
 
@@ -215,18 +254,28 @@ http://<服务器公网IP>:6099
 
 ### 6.1 首次登录
 
-在 AstrBot 容器日志中查找初始登录信息。首次登录后会要求修改密码，请使用高强度密码，不要继续使用日志中的初始密码。
+在 AstrBot 容器日志中查找初始登录信息。第一次登录后会强制要求更改密码，请使用高强度密码，不要继续使用日志中的初始密码。
 
-![AstrBot 登录信息（敏感信息已脱敏）](images/17-astrbot-login-redacted.png)
+![AstrBot 登录信息](images/17-astrbot-login-redacted.png)
+
+<p align="center"><em>图 16　AstrBot 登录信息</em></p>
+
 ![修改 AstrBot 密码](images/18-change-password.png)
+
+<p align="center"><em>图 17　修改 AstrBot 密码</em></p>
+
+改完密码进入首页后，根据快速引导进行配置。
+
 ![AstrBot 首页快速引导](images/19-astrbot-welcome.png)
 
-### 6.2 选择模型提供商
+<p align="center"><em>图 18　AstrBot 首页快速引导</em></p>
 
-以 DeepSeek 为例：
+### 6.2 配置模型提供商（DeepSeek）
+
+可以去 DeepSeek 购买 API，充值个 5 块钱个人使用完全够用：[DeepSeek 开放平台](https://platform.deepseek.com/usage)
 
 1. 在 DeepSeek 开放平台创建 API Key。
-2. 给账户充值或确认账户有可用额度。
+2. 确认账户有可用额度。
 3. 在 AstrBot 的模型提供商配置中，新增 DeepSeek。
 4. 填写 API Base URL：
 
@@ -234,45 +283,67 @@ http://<服务器公网IP>:6099
 https://api.deepseek.com/v1
 ```
 
-5. 粘贴 API Key，并点击“获取模型列表”。
-6. 从当前实际返回的模型列表中选择一个可用模型。
+5. 填写复制的 API Key。
+6. 往下滑选择**获取模型列表**，选择 `deepseek-v4-flash` 就行。
 
-模型名称和可用性会随服务商调整，不要把截图里的某个模型名称当成永久固定值。API Key 只应保存在服务器本地配置中。
 
-![DeepSeek API Keys（已脱敏）](images/20-deepseek-api-keys-redacted.png)
+
+![DeepSeek API Keys](images/20-deepseek-api-keys-redacted.png)
+
+<p align="center"><em>图 19　DeepSeek API Keys</em></p>
+
 ![DeepSeek 账户/充值页面](images/21-deepseek-billing.png)
+
+<p align="center"><em>图 20　DeepSeek 账户/充值页面</em></p>
+
 ![AstrBot 提供商配置](images/22-astrbot-provider-config.png)
+
+<p align="center"><em>图 21　AstrBot 提供商配置</em></p>
+
 ![选择模型](images/23-select-model.png)
+
+<p align="center"><em>图 22　选择模型</em></p>
 
 ### 6.3 启用 QQ 平台
 
 在 AstrBot 中：
 
-1. 打开平台配置。
-2. 选择 **OneBot v11**。
-3. 检查 WebSocket 服务端端口、路径和 Token 是否与 NapCat 客户端一致。
-4. 保存后查看平台日志，确认连接状态正常。
+1. 选择配置平台，选择 **OneBot v11**。
+2. 检查 WebSocket 服务端端口、路径和 Token 是否与 NapCat 客户端一致。
+3. 保存后查看平台日志，确认连接状态正常。
 
 ![AstrBot 平台配置](images/24-astrbot-platform-config.png)
+
+<p align="center"><em>图 23　AstrBot 平台配置</em></p>
+
 ![AstrBot 模型配置](images/25-astrbot-model-config.png)
+
+<p align="center"><em>图 24　AstrBot 模型配置</em></p>
 
 ### 6.4 设置人格
 
-在“人格”或类似配置页面中：
+往下滑选择**人格**，在人格配置页面：
 
 - 创建一个人格 ID。
-- 编写系统提示词，明确机器人的语气、边界和不应执行的操作。
+- 编写系统提示词，明确机器人的语气、边界和不应执行的操作。提示词不用自己硬写，可以和网页版 AI 聊聊让它生成系统提示词（推荐 DeepSeek 老师）。
 - 只授予必要的插件和工具权限。
-- 先在私聊或小范围群聊中测试，再考虑扩大使用范围。
+
+本仓库附的完整示例：[人格提示词：DeepSeek · 蓝色大肥鱼](docs/persona-大肥鱼.md)
+
 
 ![创建人格](images/26-create-persona.png)
+
+<p align="center"><em>图 25　创建人格</em></p>
+
 ![人格提示词](images/27-persona-prompt.png)
 
-保存并退出后，用测试 QQ 号发送消息验证回复。
+<p align="center"><em>图 26　人格提示词</em></p>
+
+点击**保存退出**即可，然后用测试 QQ 号发送消息验证回复。
 
 ## 7. 安装插件
 
-AstrBot 的插件市场可以直接探索和安装插件。安装前建议：
+为机器人添加插件——在 AstrBot 插件市场探索即可，每个插件都有详细的官方文档说明，还是通俗易懂的。安装前建议：
 
 1. 阅读插件官方文档和权限说明。
 2. 检查插件是否会访问文件、执行命令或调用外部服务。
@@ -280,6 +351,8 @@ AstrBot 的插件市场可以直接探索和安装插件。安装前建议：
 4. 记录插件版本，避免无意间自动升级导致配置变化。
 
 ![AstrBot 插件市场](images/28-plugin-market.png)
+
+<p align="center"><em>图 27　AstrBot 插件市场</em></p>
 
 ## 故障排查
 
@@ -294,8 +367,8 @@ AstrBot 的插件市场可以直接探索和安装插件。安装前建议：
 
 - 确认 WebSocket 方向只有一套配置在工作。
 - 确认 URL 的主机、端口、路径 `/ws` 和 Token 完全一致。
-- 从 NapCat 容器内部测试 AstrBot 地址是否可达。
-- 跨容器时不要使用 `127.0.0.1`。
+- 确认 AstrBot 的 WebSocket 服务端监听的是 `0.0.0.0:6199` 而不是 `127.0.0.1:6199`（`netstat -tlnp | grep 6199`）。
+- 跨容器时不要使用 `127.0.0.1`——容器里的 `127.0.0.1` 指向 NapCat 自身，正确地址的获取方法见 4.3 节。
 - 如果使用宿主机端口，检查 AstrBot 是否真的映射了 `6199`。
 
 ### QQ 扫码后仍然离线
@@ -309,7 +382,7 @@ AstrBot 的插件市场可以直接探索和安装插件。安装前建议：
 - 检查 API Key 是否有效、是否有余额或额度。
 - 检查 API Base URL 是否与服务商文档一致。
 - 在 AstrBot 中重新获取模型列表，选择当前可用模型。
-- 不要把 API Key 直接写进 README、截图或提交记录。
+
 
 ## 仓库结构
 
@@ -318,7 +391,8 @@ AstrBot 的插件市场可以直接探索和安装插件。安装前建议：
 ├── README.md
 ├── docker-compose.napcat.yml
 ├── docs/
-│   └── 在Ubuntu服务器上配置个人QQ聊天助手_优化版.docx
+│   ├── persona-大肥鱼.md
+│   
 ├── images/
 │   ├── 01-server-purchase.png
 │   ├── ...
@@ -329,13 +403,17 @@ AstrBot 的插件市场可以直接探索和安装插件。安装前建议：
 
 ## 参考资料
 
-- [1Panel 文档](https://1panel.cn/docs/)
-- [AstrBot 官方网站与文档](https://astrbot.app/)
-- [NapCatQQ 官方仓库](https://github.com/NapNeko/NapCatQQ)
+文档：
+
+- [1Panel 文档](https://1panel.cn/docs/v2/)
+- [AstrBot 官方文档](https://docs.astrbot.app/what-is-astrbot.html)
+- [AstrBot 官方网站](https://astrbot.app/)
+- [NapCatQQ Shell 部署指南](https://napneko.github.io/guide/boot/Shell)
 - [OneBot v11 标准](https://11.onebot.dev/)
 - [DeepSeek 开放平台](https://platform.deepseek.com/)
 
-## 许可证
+应用仓库：
 
-教程文本和整理后的示例配置可按 MIT License 使用；第三方项目、Docker 镜像、截图中的商标和软件内容分别归其原作者所有。
+- [NapNeko/NapCatQQ](https://github.com/NapNeko/NapCatQQ) — Modern protocol-side framework based on NTQQ
+- [AstrBotDevs/AstrBot](https://github.com/AstrBotDevs/AstrBot) — AI Agent Assistant & development framework that integrates lots of IM platforms, LLMs, plugins and AI features
 

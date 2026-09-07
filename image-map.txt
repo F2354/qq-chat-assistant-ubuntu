@@ -27,4 +27,3 @@
 27	27-persona-prompt.png
 28	28-plugin-market.png
 
-注意：images/ 中的截图已做脱敏处理。

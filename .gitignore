@@ -5,6 +5,7 @@
 napcat-data/
 logs/
 *.log
-config/*.json
+config/
+QQ/
 **/tokens/**
 **/secrets/**

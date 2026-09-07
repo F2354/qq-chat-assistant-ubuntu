@@ -10,6 +10,6 @@ services:
       - NAPCAT_UID=0
       - NAPCAT_GID=0
     volumes:
-      - ./napcat-data/config:/app/napcat/config
-      - ./napcat-data/QQ:/app/.config/QQ
-    restart: unless-stopped
+      - ./config:/app/napcat/config
+      - ./QQ:/app/.config/QQ
+    restart: always
