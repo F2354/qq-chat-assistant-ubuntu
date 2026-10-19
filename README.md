@@ -1,9 +1,11 @@
 # 在 Ubuntu 服务器上部署个人 QQ 聊天助手
 
-> 最后整理：2026-09-07  ·  文档类型：GitHub README  ·  用途：个人学习与实验
+> 最后整理：2026-10-19  ·  文档类型：GitHub README  ·  用途：个人学习与实验
 
 > 使用 Ubuntu + 1Panel + AstrBot + NapCat，将一个闲置 QQ 号接入大语言模型。
->
+
+> **当前进度**：基础链路（服务器 → 1Panel → AstrBot → NapCat → QQ 登录）已全部跑通；当前处于**「仿真群友」人设与插件调优阶段**——人格提示词已演进到 v1.1（人格 + 群聊行为规则合并版），运维侧完成了 IO 治理与自身消息修复。进阶内容见 [第 8 节](#8-进阶仿真群友人设与插件配置)。
+
 > 本教程面向个人学习和实验用途。请遵守 QQ、云厂商、模型服务商及相关法律法规，不要用于骚扰、刷屏、诈骗或其他违规行为。
 
 ## 目录
@@ -17,6 +19,7 @@
 - [5. 登录 QQ](#5-登录-qq)
 - [6. 配置 AstrBot](#6-配置-astrbot)
 - [7. 安装插件](#7-安装插件)
+- [8. 进阶：仿真群友人设与插件配置](#8-进阶仿真群友人设与插件配置)
 - [故障排查](#故障排查)
 - [仓库结构](#仓库结构)
 - [参考资料](#参考资料)
@@ -354,6 +357,40 @@ https://api.deepseek.com/v1
 
 <p align="center"><em>图 27　AstrBot 插件市场</em></p>
 
+## 8. 进阶：仿真群友人设与插件配置
+
+基础链路跑通后，下一个目标是让机器人**像真人群友一样混在群里，而不是当客服**。本节记录当前的人设方案与插件配置，方法论参考开源项目 [qq-bridge](https://github.com/Derpyu520/qq-bridge)（把 DSH agent 桥接到 QQ 做"仿真群友"的二代预设）。
+
+### 8.1 设计原则：提示词分两层
+
+| 层 | 管什么 | 放在哪 |
+|---|---|---|
+| 人格层 | AI 是谁：身份、性格、说话风格、梗、雷点 | AstrBot「人格设定」 |
+| 行为层 | 怎么在群里活着：去 AI 味铁律、分条节奏、潜水礼节、汇报禁令 | 人格提示词的第二部分（已合并） |
+
+两层合起来的完整版：[人格提示词 v1.1：DeepSeek 小鲸鱼](docs/persona-小鲸鱼-v1.1.md)。v1.1 已按实际安装的插件清单重写，删除了不存在的自研工具协议。
+
+### 8.2 当前插件清单与配置要点
+
+| 插件 | 版本 | 作用 | 配置要点 |
+|---|---|---|---|
+| 主动消息 (Proactive Chat) | v1.2.6 | 主动发言、动态调度、免打扰、TTS | **频率调低**：主动开话题由人格规则驱动，插件只做兜底，否则两边同时主动会刷屏 |
+| Self Learning 自主学习 | v4.3.0 | 黑话学习、社交关系、好感度 | **关闭"自适应人格演化"**：它会改写人格，与固定人设冲突；只用黑话/好感度部分 |
+| 表情包管理器 | v5.1.0 | 表情包 AI 发送、WebUI 管理、资源广场 | 用 marker 协议（模型写 `&&分类名&&`，发送前插件替换为图）；升级后需在设置中心恢复默认提示词模板 |
+| 专业戳一戳 | v2.1.1 | 戳戳响应（反戳、图库、禁言等） | 默认即可 |
+| 万能解析器 | v1.5.7 | 链接解析（B 站、抖音、小红书等） | 默认即可 |
+| 点歌 / QQ空间 / Steam 状态监控 | — | 按需使用 | 与人格无关，不主动提 |
+
+### 8.3 踩坑记录（重要配置项）
+
+- **机器人对自己发的图接话**：根因是 AstrBot 主配置 `ignore_bot_self_message` 为 `false`，自身消息回显后重新进上下文。改为 `true` 即修复（WebUI 保存即生效），提示词层也有兜底规则。
+- **表情包不发/乱发**：插件升级后提示词模板未重置是高频原因；标记形式可在「标签与匹配」收紧为只认 `&&分类名&&`。
+- **自动收集混入自己发的图**：`auto_collect` 开启时，回显的自己发的图可能进待审核列表，记得清理。
+
+### 8.4 架构说明：marker 协议 vs 工具调用
+
+表情包管理器证明了一条轻量路线：**模型不调工具，而是在回复文本里写标记，插件通过 hook 拦截响应、把标记替换成真图**（`on_llm_request` 注入分类提示 → `on_llm_response` 扫描标记 → `on_decorating_result` 替换发送）。分条发送等结构化行为都可以照这个模式做，比自研工具链省一大截工作量；只有"条件判断型"行为（如等某人回复再说话）才需要更重的方案，这部分由主动消息插件部分覆盖。
+
 ## 故障排查
 
 ### 浏览器无法打开面板
@@ -383,6 +420,20 @@ https://api.deepseek.com/v1
 - 检查 API Base URL 是否与服务商文档一致。
 - 在 AstrBot 中重新获取模型列表，选择当前可用模型。
 
+### Workbench 远程连接超时（SocketTimeoutException）
+
+偶发、且 CPU/内存并未占满时，优先怀疑**云盘 IO 限流**：部署期密集拉镜像/起容器会把小规格实例的云盘 IOPS 打满，限流期间云助手无法注入登录公钥，表现为连接建立超时。治理要点：一键诊断确认受限、加 swap、journald 限额、Docker 日志轮转。持续失败时另查安全组是否放行 `100.104.0.0/16 → TCP 22`（VPC 内网连接必需，注意防火墙 ≠ 安全组）。
+
+### 机器人对自己发的图片/表情接话
+
+OneBot 会把机器人自己发的消息回显成新事件。确认 AstrBot 主配置 `data/config/abconf_*.json` 中 `ignore_bot_self_message` 为 `true`；仍复现则去 NapCat 关闭「上报自身消息」。提示词层已有「自身消息识别」兜底规则。
+
+### 表情包不发送或乱发
+
+- 插件升级后未重置提示词模板：设置中心 → 提示词模板 → 恢复默认模板 → 保存并应用。
+- 标记形式误触发：设置中心 → 标签与匹配，收紧为只认 `&&分类名&&`。
+- 自动收集开启时，检查待审核列表是否混入了机器人自己发的图。
+
 
 ## 仓库结构
 
@@ -391,7 +442,8 @@ https://api.deepseek.com/v1
 ├── README.md
 ├── docker-compose.napcat.yml
 ├── docs/
-│   ├── persona-大肥鱼.md
+│   ├── persona-大肥鱼.md          # v1 人格（早期版本，存档）
+│   └── persona-小鲸鱼-v1.1.md     # 人格 + 群聊行为规则合并版（当前使用）
 │   
 ├── images/
 │   ├── 01-server-purchase.png
@@ -416,4 +468,9 @@ https://api.deepseek.com/v1
 
 - [NapNeko/NapCatQQ](https://github.com/NapNeko/NapCatQQ) — Modern protocol-side framework based on NTQQ
 - [AstrBotDevs/AstrBot](https://github.com/AstrBotDevs/AstrBot) — AI Agent Assistant & development framework that integrates lots of IM platforms, LLMs, plugins and AI features
+
+人设参考（"仿真群友"方法论来源）：
+
+- [Derpyu520/qq-bridge](https://github.com/Derpyu520/qq-bridge) — 把 DSH agent 桥接到 QQ 的二代仿真群友项目；本仓库人格提示词的行为规则移植自其二代预设
+- [anka-afk/astrbot_plugin_meme_manager](https://github.com/anka-afk/astrbot_plugin_meme_manager) — 表情包管理器（marker 协议参考实现）
 
